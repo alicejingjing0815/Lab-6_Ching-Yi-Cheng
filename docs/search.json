@@ -1,0 +1,114 @@
+[
+  {
+    "objectID": "Lab 6.html",
+    "href": "Lab 6.html",
+    "title": "Lab 6: Ordinal Logistic Regression with the Big Five",
+    "section": "",
+    "text": "This lab examines whether people with higher Extraversion scores are more likely to endorse the Big Five item “Know how to comfort others” (A3). I expected a positive association because more outgoing people may have more opportunities to respond to others’ distress, which could be associated with greater confidence in knowing how to comfort someone. Because the item has ordered response categories, I used a cumulative logit model to estimate how the distribution of responses varies with Extraversion."
+  },
+  {
+    "objectID": "Lab 6.html#a3-response-frequency-table",
+    "href": "Lab 6.html#a3-response-frequency-table",
+    "title": "Lab 6: Ordinal Logistic Regression with the Big Five",
+    "section": "2.1 A3 Response Frequency Table",
+    "text": "2.1 A3 Response Frequency Table\n\na3_counts &lt;- lab_data |&gt;\n  count(A3, .drop = FALSE) |&gt;\n  mutate(p = n / sum(n))\n\na3_counts |&gt;\n  gt() |&gt;\n  cols_label(A3 = \"Response to A3\", n = \"Count\", p = \"Proportion\") |&gt;\n  fmt_percent(columns = p, decimals = 1)\n\n\n\n\n\n\n\nResponse to A3\nCount\nProportion\n\n\n\n\nVery inaccurate\n88\n3.3%\n\n\nModerately inaccurate\n164\n6.1%\n\n\nSlightly inaccurate\n197\n7.3%\n\n\nSlightly accurate\n548\n20.3%\n\n\nModerately accurate\n961\n35.7%\n\n\nVery accurate\n736\n27.3%\n\n\n\n\n\n\n\nAll response categories were represented and retained. The least frequent category was Very inaccurate (n = 88, 3.3%)."
+  },
+  {
+    "objectID": "Lab 6.html#bar-chart-of-a3-responses",
+    "href": "Lab 6.html#bar-chart-of-a3-responses",
+    "title": "Lab 6: Ordinal Logistic Regression with the Big Five",
+    "section": "2.2 Bar Chart of A3 Responses",
+    "text": "2.2 Bar Chart of A3 Responses\n\nggplot(a3_counts, aes(A3, n)) +\n  geom_col(fill = \"#376D80\", width = 0.7) +\n  scale_x_discrete(labels = scales::label_wrap(13), drop = FALSE) +\n  labs(x = NULL, y = \"Participants\") +\n  theme_minimal()\n\n\n\n\n\n\n\n\nResponses clustered toward the accurate end of the scale, with Moderately accurate as the most common response (35.7%)."
+  },
+  {
+    "objectID": "Lab 6.html#jittered-dot-plot-of-a3-responses-by-extraversion",
+    "href": "Lab 6.html#jittered-dot-plot-of-a3-responses-by-extraversion",
+    "title": "Lab 6: Ordinal Logistic Regression with the Big Five",
+    "section": "2.3 Jittered Dot Plot of A3 Responses by Extraversion",
+    "text": "2.3 Jittered Dot Plot of A3 Responses by Extraversion\n\nggplot(lab_data, aes(extra, as.integer(A3))) +\n  geom_point(\n    position = position_jitter(width = 0.06, height = 0.14, seed = 9041),\n    alpha = 0.22, colour = \"#376D80\"\n  ) +\n  scale_y_continuous(breaks = 1:6, labels = response_levels) +\n  labs(x = \"Extraversion (subscale mean)\", y = \"Response to A3\") +\n  theme_minimal()\n\n\n\n\n\n\n\n\nEach response falls into an ordered category, so the model estimates a probability for each of the six response options."
+  },
+  {
+    "objectID": "Lab 6.html#bar-chart-of-dominant-traits",
+    "href": "Lab 6.html#bar-chart-of-dominant-traits",
+    "title": "Lab 6: Ordinal Logistic Regression with the Big Five",
+    "section": "2.4 Bar Chart of Dominant Traits",
+    "text": "2.4 Bar Chart of Dominant Traits\n\nlab_data |&gt;\n  count(dominant, .drop = FALSE) |&gt;\n  ggplot(aes(n, fct_reorder(dominant, n))) +\n  geom_col(fill = \"#77618A\", width = 0.7) +\n  labs(x = \"Participants\", y = \"Highest-scoring trait\") +\n  theme_minimal()\n\n\n\n\n\n\n\nobs_tab &lt;- a3_counts |&gt;\n  mutate(\n    cumulative_p = cumsum(n) / sum(n),\n    cumulative_odds = if_else(\n      row_number() &lt; n(), cumulative_p / (1 - cumulative_p), NA_real_\n    ),\n    cumulative_logit = if_else(\n      row_number() &lt; n(), qlogis(cumulative_p), NA_real_\n    )\n  )\n\nAgreeableness was the most common highest-scoring trait, and Neuroticism was the least common. The bars are sorted by frequency, while the trait categories themselves have no inherent order."
+  },
+  {
+    "objectID": "Lab 6.html#observed-cumulative-probabilities-odds-and-log-odds",
+    "href": "Lab 6.html#observed-cumulative-probabilities-odds-and-log-odds",
+    "title": "Lab 6: Ordinal Logistic Regression with the Big Five",
+    "section": "3.1 Observed Cumulative Probabilities, Odds, and Log-Odds",
+    "text": "3.1 Observed Cumulative Probabilities, Odds, and Log-Odds\n\nobs_tab |&gt;\n  gt() |&gt;\n  cols_label(\n    A3 = \"Response to A3\", n = \"Count\", p = \"P(Y = j)\",\n    cumulative_p = \"P(Y ≤ j)\", cumulative_odds = \"Odds of Y ≤ j\",\n    cumulative_logit = \"Log-odds of Y ≤ j\"\n  ) |&gt;\n  fmt_number(columns = c(p, cumulative_p), decimals = 3) |&gt;\n  fmt_number(columns = c(cumulative_odds, cumulative_logit), decimals = 2) |&gt;\n  sub_missing(missing_text = \"—\")\n\n\n\n\n\n\n\nResponse to A3\nCount\nP(Y = j)\nP(Y ≤ j)\nOdds of Y ≤ j\nLog-odds of Y ≤ j\n\n\n\n\nVery inaccurate\n88\n0.033\n0.033\n0.03\n−3.39\n\n\nModerately inaccurate\n164\n0.061\n0.094\n0.10\n−2.27\n\n\nSlightly inaccurate\n197\n0.073\n0.167\n0.20\n−1.61\n\n\nSlightly accurate\n548\n0.203\n0.370\n0.59\n−0.53\n\n\nModerately accurate\n961\n0.357\n0.727\n2.66\n0.98\n\n\nVery accurate\n736\n0.273\n1.000\n—\n—\n\n\n\n\n\n\n\nAbout 16.7% of participants selected Slightly inaccurate or a lower category. The six response categories yield five cumulative cutpoints because the last category includes everyone. The probability of responding above that category is zero, so its cumulative odds and log-odds have no finite value.\n#Part 4. Fit and Interpret Cumulative Logit Models ## 4.1 Fit the Threshold-Only and Extraversion Models The A3 response categories have a natural order, and the distances between adjacent categories may differ. A cumulative logit model uses the order of the responses to estimate the probability of responding at or below each cutpoint.\n\nstopifnot(all(a3_counts$n &gt; 0))\nm0 &lt;- clm(A3 ~ 1, data = lab_data, link = \"logit\")\nm1 &lt;- clm(A3 ~ extra_c, data = lab_data, link = \"logit\")\n\nsummary(m1)\n\nformula: A3 ~ extra_c\ndata:    lab_data\n\n link  threshold nobs logLik   AIC     niter max.grad cond.H \n logit flexible  2694 -3814.51 7641.02 5(0)  1.74e-08 2.0e+01\n\nCoefficients:\n        Estimate Std. Error z value Pr(&gt;|z|)    \nextra_c  0.83589    0.03666    22.8   &lt;2e-16 ***\n---\nSignif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n\nThreshold coefficients:\n                                          Estimate Std. Error z value\nVery inaccurate|Moderately inaccurate     -3.77030    0.11286  -33.41\nModerately inaccurate|Slightly inaccurate -2.58075    0.07114  -36.28\nSlightly inaccurate|Slightly accurate     -1.84634    0.05617  -32.87\nSlightly accurate|Moderately accurate     -0.60419    0.04274  -14.14\nModerately accurate|Very accurate          1.14590    0.04649   24.65\n\n\nAbout 16.7% of participants selected Slightly inaccurate or a lower category. The six response categories yield five cumulative cutpoints because the last category includes everyone. The probability of responding above that category is zero, so its cumulative odds and log-odds have no finite value."
+  },
+  {
+    "objectID": "Lab 6.html#interpret-the-thresholds-at-average-extraversion",
+    "href": "Lab 6.html#interpret-the-thresholds-at-average-extraversion",
+    "title": "Lab 6: Ordinal Logistic Regression with the Big Five",
+    "section": "4.2 Interpret the Thresholds at Average Extraversion",
+    "text": "4.2 Interpret the Thresholds at Average Extraversion\n\nth &lt;- m1$alpha\nb &lt;- coef(m1)[[\"extra_c\"]]\ncum_avg &lt;- plogis(th)\ncat_avg &lt;- diff(c(0, cum_avg, 1))\nendorse_avg &lt;- 1 - cum_avg[3]\n\ntibble(\n  Response = response_levels,\n  Threshold = c(unname(th), NA_real_),\n  `P(Y ≤ j)` = c(unname(cum_avg), 1),\n  `P(Y = j)` = cat_avg\n) |&gt;\n  gt() |&gt;\n  fmt_number(columns = Threshold, decimals = 2) |&gt;\n  fmt_percent(columns = c(`P(Y ≤ j)`, `P(Y = j)`), decimals = 1) |&gt;\n  sub_missing(missing_text = \"—\")\n\n\n\n\n\n\n\nResponse\nThreshold\nP(Y ≤ j)\nP(Y = j)\n\n\n\n\nVery inaccurate\n−3.77\n2.3%\n2.3%\n\n\nModerately inaccurate\n−2.58\n7.0%\n4.8%\n\n\nSlightly inaccurate\n−1.85\n13.6%\n6.6%\n\n\nSlightly accurate\n−0.60\n35.3%\n21.7%\n\n\nModerately accurate\n1.15\n75.9%\n40.5%\n\n\nVery accurate\n—\n100.0%\n24.1%\n\n\n\n\n\n\n\nCentring sets zero to the sample mean of Extraversion, so the thresholds describe a participant with an average score. This changes the reference point and leaves the slope unchanged. At average Extraversion, the most likely response was Moderately accurate (40.5%), and the predicted probability of responding Slightly accurate or higher was 86.4%."
+  },
+  {
+    "objectID": "Lab 6.html#compare-m0-thresholds-with-observed-cumulative-log-odds",
+    "href": "Lab 6.html#compare-m0-thresholds-with-observed-cumulative-log-odds",
+    "title": "Lab 6: Ordinal Logistic Regression with the Big Five",
+    "section": "4.3 Compare M0 Thresholds with Observed Cumulative Log-Odds",
+    "text": "4.3 Compare M0 Thresholds with Observed Cumulative Log-Odds\n\ntibble(\n  Cutpoint = names(m0$alpha),\n  Observed_logit = head(obs_tab$cumulative_logit, -1),\n  M0_threshold = unname(m0$alpha)\n) |&gt;\n  gt() |&gt;\n  fmt_number(columns = c(Observed_logit, M0_threshold), decimals = 3)\n\n\n\n\n\n\n\nCutpoint\nObserved_logit\nM0_threshold\n\n\n\n\nVery inaccurate|Moderately inaccurate\n−3.388\n−3.388\n\n\nModerately inaccurate|Slightly inaccurate\n−2.271\n−2.271\n\n\nSlightly inaccurate|Slightly accurate\n−1.609\n−1.609\n\n\nSlightly accurate|Moderately accurate\n−0.532\n−0.532\n\n\nModerately accurate|Very accurate\n0.978\n0.978\n\n\n\n\n\n\n\nThe M0 thresholds match the observed cumulative log-odds because M0 has no predictors and describes the overall response distribution. The M1 thresholds describe the predicted distribution at average Extraversion.\n#Part 5. Compare the Models and Interpret the Slope ## 5.1 Likelihood-Ratio Test\n\nlrt &lt;- anova(m0, m1)\nlrt\n\nLikelihood ratio tests of cumulative link models:\n \n   formula:     link: threshold:\nm0 A3 ~ 1       logit flexible  \nm1 A3 ~ extra_c logit flexible  \n\n   no.par    AIC  logLik LR.stat df Pr(&gt;Chisq)    \nm0      5 8197.4 -4093.7                          \nm1      6 7641.0 -3814.5  558.33  1  &lt; 2.2e-16 ***\n---\nSignif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n\nlr_stat &lt;- lrt$LR.stat[2]\nlr_df &lt;- lrt$df[2]\nlr_p &lt;- lrt$`Pr(&gt;Chisq)`[2]\n\nAdding Extraversion improved model fit relative to the threshold-only model, χ²(1) = 558.33, p &lt; .001."
+  },
+  {
+    "objectID": "Lab 6.html#aic-comparison-and-model-selection",
+    "href": "Lab 6.html#aic-comparison-and-model-selection",
+    "title": "Lab 6: Ordinal Logistic Regression with the Big Five",
+    "section": "5.2 AIC Comparison and Model Selection",
+    "text": "5.2 AIC Comparison and Model Selection\n\nlr_stat &lt;- lrt$LR.stat[2]\nlr_df &lt;- lrt$df[2]\nlr_p &lt;- lrt$`Pr(&gt;Chisq)`[2]\naic_difference &lt;- abs(AIC(m0) - AIC(m1))\n\ntibble(\n  Model = c(\"M0: Thresholds only\", \"M1: Extraversion\"),\n  Parameters = c(length(coef(m0)), length(coef(m1))),\n  `Log-likelihood` = c(as.numeric(logLik(m0)), as.numeric(logLik(m1))),\n  AIC = c(AIC(m0), AIC(m1))\n) |&gt;\n  mutate(`ΔAIC` = AIC - min(AIC)) |&gt;\n  gt() |&gt;\n  fmt_number(columns = c(`Log-likelihood`, AIC, `ΔAIC`), decimals = 2)\n\n\n\n\n\n\n\nModel\nParameters\nLog-likelihood\nAIC\nΔAIC\n\n\n\n\nM0: Thresholds only\n5\n−4,093.68\n8,197.35\n556.33\n\n\nM1: Extraversion\n6\n−3,814.51\n7,641.02\n0.00\n\n\n\n\n\n\n\nM1 had a lower AIC than M0 (ΔAIC = 556.33). Both the likelihood-ratio test and AIC favoured M1, so I carried it forward to the proportional-odds check."
+  },
+  {
+    "objectID": "Lab 6.html#interpret-the-extraversion-slope-on-the-latent-scale",
+    "href": "Lab 6.html#interpret-the-extraversion-slope-on-the-latent-scale",
+    "title": "Lab 6: Ordinal Logistic Regression with the Big Five",
+    "section": "5.3 Interpret the Extraversion Slope on the Latent Scale",
+    "text": "5.3 Interpret the Extraversion Slope on the Latent Scale\n\nmiddle_width &lt;- mean(diff(th)[2:3])\nfraction_of_middle_category &lt;- abs(b) / middle_width\n\nA one-point increase in Extraversion was associated with an upward shift of 0.84 units on the latent response scale. This shift was about 84.6% of the average width of the two middle response categories on that scale."
+  },
+  {
+    "objectID": "Lab 6.html#likelihood-ratio-test-for-proportional-odds",
+    "href": "Lab 6.html#likelihood-ratio-test-for-proportional-odds",
+    "title": "Lab 6: Ordinal Logistic Regression with the Big Five",
+    "section": "6.1 Likelihood-Ratio Test for Proportional Odds",
+    "text": "6.1 Likelihood-Ratio Test for Proportional Odds\n\npo_test &lt;- nominal_test(m1)\npo_test\n\nTests of nominal effects\n\nformula: A3 ~ extra_c\n        Df  logLik    AIC     LRT Pr(&gt;Chi)\n&lt;none&gt;     -3814.5 7641.0                 \nextra_c  4 -3814.1 7648.2 0.83519   0.9337\n\npo_lrt &lt;- po_test[\"extra_c\", \"LRT\"]\npo_df  &lt;- po_test[\"extra_c\", \"Df\"]\npo_p   &lt;- po_test[\"extra_c\", \"Pr(&gt;Chi)\"]\n\nAllowing the Extraversion slope to vary across cutpoints did not significantly improve fit, χ²(4) = 0.84, p = .934. I retained the proportional-odds model."
+  },
+  {
+    "objectID": "Lab 6.html#estimate-threshold-specific-odds-ratios-for-the-plot",
+    "href": "Lab 6.html#estimate-threshold-specific-odds-ratios-for-the-plot",
+    "title": "Lab 6: Ordinal Logistic Regression with the Big Five",
+    "section": "6.2 Estimate Threshold-Specific Odds Ratios for the Plot",
+    "text": "6.2 Estimate Threshold-Specific Odds Ratios for the Plot\n\nm_nom &lt;- clm(A3 ~ 1, nominal = ~ extra_c, data = lab_data, link = \"logit\")\n\nif (po_p &lt; .05) {\n  print(anova(m1, m_nom))\n}\n\nnom_coefs &lt;- coef(m_nom)\nnom_terms &lt;- paste0(names(th), \".extra_c\")\nstopifnot(all(nom_terms %in% names(nom_coefs)))\n\nnom_est &lt;- nom_coefs[nom_terms]\nnom_se &lt;- sqrt(diag(vcov(m_nom)))[nom_terms]\nz_95 &lt;- qnorm(.975)\n\nthreshold_or &lt;- tibble(\n  Threshold = names(th),\n  OR = exp(-nom_est),\n  low = exp(-nom_est - z_95 * nom_se),\n  high = exp(-nom_est + z_95 * nom_se),\n  Model = \"Threshold-specific\"\n)\n\nif (po_p &lt; .05) {\n  threshold_or |&gt;\n    select(-Model) |&gt;\n    gt() |&gt;\n    fmt_number(columns = c(OR, low, high), decimals = 2) |&gt;\n    print()\n}"
+  },
+  {
+    "objectID": "Lab 6.html#shared-cumulative-odds-ratio",
+    "href": "Lab 6.html#shared-cumulative-odds-ratio",
+    "title": "Lab 6: Ordinal Logistic Regression with the Big Five",
+    "section": "7.1 Shared Cumulative Odds Ratio",
+    "text": "7.1 Shared Cumulative Odds Ratio\n\nor_tab &lt;- tidy(m1, conf.int = TRUE, exponentiate = TRUE) |&gt;\n  filter(term == \"extra_c\", coef.type == \"location\")\n\nodds_change &lt;- abs(or_tab$estimate - 1)\nodds_direction &lt;- if (or_tab$estimate &gt;= 1) \"higher\" else \"lower\"\n\nEach one-point increase in Extraversion was associated with 130.7% higher odds of responding above any given cutpoint, OR = 2.31, 95% CI [2.15, 2.48], p &lt; .001."
+  },
+  {
+    "objectID": "Lab 6.html#predicted-probability-of-endorsing-the-item",
+    "href": "Lab 6.html#predicted-probability-of-endorsing-the-item",
+    "title": "Lab 6: Ordinal Logistic Regression with the Big Five",
+    "section": "7.2 Predicted Probability of Endorsing the Item",
+    "text": "7.2 Predicted Probability of Endorsing the Item"
+  },
+  {
+    "objectID": "Lab 6.html#predicted-probabilities-for-all-response-categories",
+    "href": "Lab 6.html#predicted-probabilities-for-all-response-categories",
+    "title": "Lab 6: Ordinal Logistic Regression with the Big Five",
+    "section": "7.3 Predicted Probabilities for All Response Categories",
+    "text": "7.3 Predicted Probabilities for All Response Categories\n\npred &lt;- ggpredict(m1, terms = \"extra_c [all]\") |&gt;\n  as.data.frame()\n\ncategory &lt;- as.character(pred$response.level)\ncategory_index &lt;- match(category, as.character(seq_along(response_levels)))\n\npred &lt;- pred |&gt;\n  mutate(\n    Extraversion = x + extra_mean,\n    Response = factor(\n      coalesce(response_levels[category_index], category),\n      levels = response_levels\n    )\n  )\n\nstopifnot(!anyNA(pred$Response), !anyNA(pred$predicted))\n\nggplot(pred, aes(Extraversion, predicted, fill = Response, group = Response)) +\n  geom_area(position = position_stack(reverse = TRUE)) +\n  scale_fill_viridis_d(drop = FALSE) +\n  scale_y_continuous(labels = scales::label_percent()) +\n  guides(fill = guide_legend(nrow = 2, byrow = TRUE)) +\n  labs(\n    x = \"Extraversion (subscale mean)\",\n    y = \"Predicted probability\",\n    fill = NULL\n  ) +\n  theme_minimal() +\n  theme(legend.position = \"bottom\")\n\n\n\n\n\n\n\nFigure 1: Predicted response probabilities for the comfort item from the proportional-odds model.\n\n\n\n\n\nAs Extraversion increased, the predicted response distribution shifted toward higher categories, with Very accurate becoming more likely."
+  },
+  {
+    "objectID": "Lab 6.html#shared-and-threshold-specific-odds-ratios",
+    "href": "Lab 6.html#shared-and-threshold-specific-odds-ratios",
+    "title": "Lab 6: Ordinal Logistic Regression with the Big Five",
+    "section": "7.4 Shared and Threshold-Specific Odds Ratios",
+    "text": "7.4 Shared and Threshold-Specific Odds Ratios\n\nbind_rows(\n  tibble(\n    Threshold = \"Shared (proportional odds)\",\n    OR = or_tab$estimate,\n    low = or_tab$conf.low,\n    high = or_tab$conf.high,\n    Model = \"Shared\"\n  ),\n  threshold_or\n) |&gt;\n  mutate(Threshold = fct_rev(fct_inorder(Threshold))) |&gt;\n  ggplot(aes(OR, Threshold, colour = Model)) +\n  geom_vline(xintercept = 1, linetype = \"dashed\", colour = \"grey50\") +\n  geom_pointrange(aes(xmin = low, xmax = high)) +\n  scale_x_log10() +\n  labs(x = \"Odds ratio for responding above the threshold\",\n       y = NULL, colour = NULL) +\n  theme_minimal() +\n  theme(legend.position = \"bottom\")\n\n\n\n\n\n\n\nFigure 2: Shared and threshold-specific cumulative odds ratios for Extraversion.\n\n\n\n\n\nThe threshold-specific odds ratios clustered around the shared estimate, and all confidence intervals lay above one. This pattern was consistent with the likelihood-ratio test and supported retaining a common slope across cutpoints."
+  }
+]
